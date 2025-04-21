@@ -1,0 +1,547 @@
+---
+// Importamos las funciones necesarias
+import { fetchMesas, fetchEnlacesPorMesa, fetchConfig } from '../utils/api.js';
+
+// Función para generar todas las rutas estáticas posibles
+export async function getStaticPaths() {
+  // Obtenemos todas las mesas disponibles
+  const mesas = await fetchMesas();
+  
+  // Para cada mesa, generamos una ruta
+  return mesas.map(mesa => ({
+    params: { mesa: mesa.id },
+    props: { mesaData: mesa },
+  }));
+}
+
+// Obtenemos el ID de mesa y los datos pasados desde getStaticPaths
+const { mesa } = Astro.params;
+const { mesaData } = Astro.props;
+
+// Inicializamos variables
+let enlaces = [];
+let mensajeBienvenida = '';
+let error = '';
+
+try {
+  // Obtenemos los enlaces para esta mesa específica
+  enlaces = await fetchEnlacesPorMesa(mesa);
+  
+  // Obtenemos el mensaje de bienvenida
+  const config = await fetchConfig('bienvenida');
+  mensajeBienvenida = config.valor;
+} catch (e) {
+  error = 'No se pudo conectar con el servidor. Por favor intenta más tarde o revisa la configuración.';
+}
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <title>Enlaces para Mesa {mesa}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      :root {
+        --azul-principal: #00baff;
+        --azul-oscuro: #1d335c;
+        --blanco: #fff;
+        --gris-fondo: #f7f7fb;
+        --oscuro-bg: #181a1b;
+        --oscuro-card: #23272a;
+        --oscuro-texto: #e6e6e6;
+        --oscuro-acento: #00baff;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: var(--gris-fondo);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        transition: background 0.3s, color 0.3s;
+      }
+      body.dark {
+        background: var(--oscuro-bg);
+        color: var(--oscuro-texto);
+      }
+      header {
+        background: var(--blanco);
+        padding: 1.5rem 1rem 1rem 1rem;
+        text-align: center;
+        border-radius: 0 0 24px 24px;
+        box-shadow: 0 2px 12px #00baff22;
+        margin-bottom: 1.2rem;
+        transition: background 0.3s;
+      }
+      .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        margin-bottom: 1rem;
+      }
+      body.dark header {
+        background: var(--oscuro-card);
+      }
+      .logo-akantar {
+        height: 60px;
+        margin-bottom: 0.5rem;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      
+      /* Control de visibilidad de logos según tema */
+      .logo-light {
+        display: block;
+      }
+      
+      .logo-dark {
+        display: none;
+      }
+      
+      body.dark .logo-light {
+        display: none;
+      }
+      
+      body.dark .logo-dark {
+        display: block;
+      }
+      .logo-kubo {
+        height: 36px;
+        vertical-align: middle;
+        margin-right: 0.5rem;
+      }
+      .bienvenida {
+        color: var(--azul-oscuro);
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0.5rem 0 0 0;
+        transition: color 0.3s;
+      }
+      body.dark .bienvenida {
+        color: var(--oscuro-acento);
+      }
+      .modo-btn {
+        position: absolute;
+        top: 1.2rem;
+        right: 1.2rem;
+        background: var(--azul-principal);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        cursor: pointer;
+        box-shadow: 0 2px 8px #00baff22;
+        transition: background 0.2s, transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .modo-btn:hover {
+        transform: scale(1.05);
+      }
+      
+      .icono-modo {
+        width: 20px;
+        height: 20px;
+        fill: white;
+        position: absolute;
+        transition: opacity 0.3s, transform 0.3s;
+      }
+      
+      /* Control de visibilidad de iconos */
+      .icono-sol {
+        opacity: 0;
+        transform: scale(0.7);
+      }
+      
+      .icono-luna {
+        opacity: 1;
+        transform: scale(1);
+      }
+      
+      /* En modo oscuro se invierten */
+      body.dark .icono-sol {
+        opacity: 1;
+        transform: scale(1);
+      }
+      
+      body.dark .icono-luna {
+        opacity: 0;
+        transform: scale(0.7);
+      }
+      .modo-btn:hover {
+        background: var(--azul-oscuro);
+      }
+      h1 {
+        text-align: center;
+        color: var(--azul-oscuro);
+        font-size: 1.5rem;
+        margin-bottom: 1.2rem;
+        transition: color 0.3s;
+      }
+      body.dark h1 {
+        color: var(--oscuro-acento);
+      }
+      .enlaces-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        padding: 0;
+        margin: 0;
+      }
+      .enlace-tarjeta {
+        background: var(--blanco);
+        border-radius: 18px;
+        box-shadow: 0 4px 22px #00baff18;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 1rem;
+        cursor: pointer;
+        transition: box-shadow 0.22s, transform 0.18s, background 0.22s;
+        position: relative;
+        border: none;
+        outline: none;
+        text-decoration: none;
+      }
+      /* Efectos hover distintivos por peso */
+      .enlace-tarjeta:hover {
+        box-shadow: 0 6px 24px #00baff33;
+        background: #f2fbff;
+        transform: translateY(-2px);
+      }
+      
+      .enlace-tarjeta.peso-5:hover {
+        box-shadow: 0 8px 28px #00baff44;
+        transform: translateY(-3px);
+      }
+      
+      .enlace-tarjeta.peso-4:hover {
+        box-shadow: 0 7px 26px #00baff3a;
+        transform: translateY(-2.5px);
+      }
+      body.dark .enlace-tarjeta {
+        background: #23272a;
+        box-shadow: 0 4px 22px #00baff33;
+      }
+      body.dark .enlace-tarjeta:hover {
+        background: #1b2a36;
+      }
+      .enlace-nombre {
+        font-size: 1.1rem;
+        font-weight: 650;
+        color: var(--azul-oscuro);
+        letter-spacing: 0.01em;
+        margin-bottom: 0.1em;
+        line-height: 1.25;
+        word-break: break-word;
+        transition: color 0.3s, font-size 0.2s;
+      }
+      body.dark .enlace-nombre {
+        color: var(--oscuro-texto);
+      }
+      .enlace-url {
+        font-size: 0.97rem;
+        color: #6a7a8c;
+        margin-top: 0.18em;
+        word-break: break-all;
+      }
+      body.dark .enlace-url {
+        color: #b1c3d6;
+      }
+      
+      /* Estilos para iconos de enlaces */
+      .enlace-icon-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.8rem;
+        flex-shrink: 0;
+      }
+      
+      .enlace-icon {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        border-radius: 4px;
+        margin-right: 10px;
+      }
+      
+      .enlace-content {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+      }
+      
+      /* Badge para enlaces destacados */
+      .enlace-badge {
+        display: inline-block;
+        background: var(--azul-principal);
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-top: 5px;
+        font-weight: bold;
+        align-self: flex-start;
+      }
+      
+      body.dark .enlace-badge {
+        background: var(--oscuro-acento);
+      }
+      /* Prioridad visual por peso - Diseño más compacto con indicadores sutiles */
+      .enlace-tarjeta.peso-5 {
+        font-size: 1.15rem;
+        padding: 0.9rem;
+        box-shadow: 0 6px 20px #00baff44;
+        z-index: 2;
+        border-left: 4px solid var(--azul-principal);
+      }
+      .enlace-tarjeta.peso-5 .enlace-icon {
+        width: 38px;
+        height: 38px;
+      }
+      .enlace-tarjeta.peso-4 {
+        font-size: 1.1rem;
+        padding: 0.85rem;
+        box-shadow: 0 4px 16px #00baff33;
+        border-left: 3px solid var(--azul-principal);
+      }
+      .enlace-tarjeta.peso-4 .enlace-icon {
+        width: 34px;
+        height: 34px;
+      }
+      .enlace-tarjeta.peso-3 {
+        font-size: 1.05rem;
+        padding: 0.8rem;
+        box-shadow: 0 3px 14px #00baff22;
+      }
+      .enlace-tarjeta.peso-3 .enlace-icon {
+        width: 32px;
+        height: 32px;
+      }
+      .enlace-tarjeta.peso-2 {
+        font-size: 1rem;
+        padding: 0.75rem;
+        box-shadow: 0 2px 10px #00baff16;
+        opacity: 0.95;
+      }
+      .enlace-tarjeta.peso-2 .enlace-icon {
+        width: 30px;
+        height: 30px;
+      }
+      .enlace-tarjeta.peso-1 {
+        font-size: 0.95rem;
+        padding: 0.7rem;
+        opacity: 0.9;
+        box-shadow: 0 1px 4px #00baff10;
+      }
+      .enlace-tarjeta.peso-1 .enlace-icon {
+        width: 28px;
+        height: 28px;
+      }
+      
+      /* Adaptación para modo oscuro */
+      body.dark .enlace-tarjeta.peso-5,
+      body.dark .enlace-tarjeta.peso-4 {
+        border-left-color: var(--oscuro-acento);
+      }
+      .enlace-tarjeta {
+        margin-bottom: 0.2rem;
+      }
+      .enlaces-grid {
+        gap: 1.1rem;
+      }
+      @media (max-width: 600px) {
+        .enlaces-grid {
+          grid-template-columns: 1fr;
+          gap: 0.5rem;
+        }
+        .enlace-tarjeta.peso-5 { font-size: 1.05rem; padding: 0.85rem; }
+        .enlace-tarjeta.peso-4 { font-size: 1.02rem; padding: 0.8rem; }
+        .enlace-tarjeta.peso-3 { font-size: 1rem; padding: 0.75rem; }
+        .enlace-tarjeta.peso-2 { font-size: 0.95rem; padding: 0.7rem; }
+        .enlace-tarjeta.peso-1 { font-size: 0.9rem; padding: 0.65rem; }
+        
+        .enlace-tarjeta.peso-5 .enlace-icon,
+        .enlace-tarjeta.peso-4 .enlace-icon { width: 30px; height: 30px; }
+        
+        .enlace-tarjeta.peso-3 .enlace-icon,
+        .enlace-tarjeta.peso-2 .enlace-icon,
+        .enlace-tarjeta.peso-1 .enlace-icon { width: 26px; height: 26px; }
+        
+        .enlace-icon-container { margin-right: 0.6rem; }
+      }
+      .icono {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e6f7fd;
+        border-radius: 50%;
+        transition: background 0.3s;
+      }
+      body.dark .icono {
+        background: #222e37;
+      }
+      .nombre {
+        flex: 1;
+        font-size: 1.15rem;
+        color: var(--azul-oscuro);
+        font-weight: 500;
+        transition: color 0.3s;
+      }
+      body.dark .nombre {
+        color: var(--oscuro-texto);
+      }
+      .boton {
+        background: var(--azul-principal);
+        color: #fff;
+        border: none;
+        padding: 0.55rem 1.1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: background 0.2s;
+        box-shadow: 0 1px 4px #00baff22;
+      }
+      .boton:hover {
+        background: var(--azul-oscuro);
+      }
+      /* Destacar enlaces de mayor peso */
+      .enlace-destacado {
+        border: 2.5px solid var(--azul-principal);
+        background: #e6f7fd;
+        font-size: 1.18rem;
+        box-shadow: 0 4px 18px #00baff44;
+      }
+      body.dark .enlace-destacado {
+        background: #1b2a36;
+        border-color: var(--oscuro-acento);
+      }
+      .badge-peso {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.7rem;
+        background: var(--azul-principal);
+        color: #fff;
+        font-size: 0.85em;
+        font-weight: bold;
+        border-radius: 8px;
+        padding: 0.2em 0.7em;
+        box-shadow: 0 1px 4px #00baff22;
+        letter-spacing: 0.04em;
+      }
+      body.dark .badge-peso {
+        background: var(--oscuro-acento);
+        color: #222e37;
+      }
+      footer {
+        margin-top: auto;
+        padding: 1rem 0 0.5rem 0;
+        text-align: center;
+        color: #888;
+        font-size: 0.95rem;
+        transition: color 0.3s;
+      }
+      body.dark footer {
+        color: #aaa;
+      }
+      @media (max-width: 600px) {
+        header { padding: 1rem 0.2rem 1rem 0.2rem; }
+        li { padding: 0.7rem 0.5rem; }
+        .nombre { font-size: 1rem; }
+        .modo-btn { top: 0.5rem; right: 0.5rem; }
+      }
+    </style>
+    <script is:inline>
+      // Modo oscuro/claro con almacenamiento en localStorage
+      document.addEventListener('DOMContentLoaded', function() {
+        const root = document.body;
+        const modo = localStorage.getItem('modoKubo') || 'claro';
+        if(modo === 'oscuro') root.classList.add('dark');
+        document.getElementById('modo-toggle').onclick = function() {
+          root.classList.toggle('dark');
+          localStorage.setItem('modoKubo', root.classList.contains('dark') ? 'oscuro' : 'claro');
+        };
+      });
+    </script>
+  </head>
+  <body>
+    <header>
+      <div class="header-content">
+        <!-- Logo de Akantar con versiones para modo claro/oscuro -->
+        <img src="/logos/akantar-logo.png" alt="Akantar" class="logo-akantar logo-light" />
+        <img src="/logos/akantar-logo-outline.png" alt="Akantar" class="logo-akantar logo-dark" />
+        <p class="bienvenida">{mensajeBienvenida}</p>
+        <button id="modo-toggle" class="modo-btn" title="Cambiar modo claro/oscuro" aria-label="Cambiar modo claro/oscuro">
+          <!-- Icono de sol (modo claro) -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icono-modo icono-sol">
+            <path d="M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM19.0711 3.51472L20.4853 4.92893L18.364 7.05025L16.9497 5.63604L19.0711 3.51472ZM5.63604 16.9497L7.05025 18.364L4.92893 20.4853L3.51472 19.0711L5.63604 16.9497ZM23 11V13H20V11H23ZM4 11V13H1V11H4Z" />
+          </svg>
+          <!-- Icono de luna (modo oscuro) -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icono-modo icono-luna">
+            <path d="M10 6C10 10.4183 13.5817 14 18 14C19.4386 14 20.7885 13.6203 21.9549 12.9556C21.4738 18.0302 17.2005 22 12 22C6.47715 22 2 17.5228 2 12C2 6.79948 5.9698 2.52616 11.0444 2.04507C10.3797 3.21152 10 4.56142 10 6ZM4 12C4 16.4183 7.58172 20 12 20C14.9654 20 17.5782 18.3788 18.9204 16H18C11.9249 16 7 11.0751 7 5C7 4.65279 7.02413 4.31149 7.07089 3.97738C5.26935 5.78041 4 8.71776 4 12Z" />
+          </svg>
+        </button>
+      </div>
+      <h1>Mesa #{mesa}</h1>
+    </header>
+    <main>
+      {error ? (
+        <div style="color: #c00; text-align:center; font-weight:600; margin:2rem 0;">{error}</div>
+      ) : (
+        <div class="enlaces-grid">
+          {enlaces && enlaces.length > 0 ? (
+            enlaces
+              .slice()
+              .sort((a, b) => (b.peso || 1) - (a.peso || 1))
+              .map(enlace => {
+                let nombre = decodeURIComponent(escape(unescape(encodeURIComponent(enlace.nombre || ''))));
+                const peso = enlace.peso || 1;
+                // Cada tarjeta es clickable y más grande según peso
+                return (
+                  <a
+                    class={`enlace-tarjeta peso-${peso}`}
+                    href={enlace.url.startsWith('http') ? enlace.url : `https://${enlace.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <div class="enlace-icon-container">
+                      {enlace.icono ? (
+                        <img 
+                          src={enlace.icono} 
+                          alt="" 
+                          class="enlace-icon" 
+                          onError="this.onerror=null; this.src='/logos/kubo-logo.png';"
+                        />
+                      ) : (
+                        <img src="/logos/kubo-logo.png" alt="" class="enlace-icon" />
+                      )}
+                    </div>
+                    <div class="enlace-content">
+                      <span class="enlace-nombre">{nombre}</span>
+                      <span class="enlace-url">{enlace.url}</span>
+                    </div>
+                  </a>
+                );
+              })
+          ) : (
+            <div style="padding:2rem;text-align:center;opacity:0.7;">No hay enlaces disponibles.</div>
+          )}
+        </div>
+      )}
+    </main>
+    <footer>
+      <span>Powered by <img src="/logos/kubo-logo.png" alt="Kubo" style="height:1em;vertical-align:middle;margin-right:0.2em;"/> Kubo</span>
+    </footer>
+  </body>
+</html>

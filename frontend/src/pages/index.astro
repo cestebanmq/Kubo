@@ -1,0 +1,205 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { fetchMesas, fetchConfig } from '../utils/api.js';
+let mesas = [];
+let mensajeBienvenida = '';
+let error = '';
+try {
+  mesas = await fetchMesas();
+  const config = await fetchConfig('bienvenida');
+  mensajeBienvenida = config.valor;
+} catch (e) {
+  error = 'No se pudo conectar con el servidor. Por favor intenta más tarde o revisa la configuración.';
+}
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <title>Bienvenido a Kubo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      :root {
+        --azul-principal: #00baff;
+        --azul-oscuro: #1d335c;
+        --blanco: #fff;
+        --gris-fondo: #f7f7fb;
+        --oscuro-bg: #181a1b;
+        --oscuro-card: #23272a;
+        --oscuro-texto: #e6e6e6;
+        --oscuro-acento: #00baff;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: var(--gris-fondo);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        background: var(--blanco);
+        padding: 1.5rem 1rem 1rem 1rem;
+        text-align: center;
+        border-radius: 0 0 24px 24px;
+        box-shadow: 0 2px 12px #00baff22;
+        margin-bottom: 1.2rem;
+      }
+      .logo-akantar {
+        height: 60px;
+        margin-bottom: 0.5rem;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .logo-kubo {
+        height: 36px;
+        vertical-align: middle;
+        margin-right: 0.5rem;
+      }
+      .bienvenida {
+        color: var(--azul-oscuro);
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0.5rem 0 0 0;
+      }
+      h1 {
+        text-align: center;
+        color: var(--azul-oscuro);
+        font-size: 1.7rem;
+        margin-bottom: 1.2rem;
+      }
+      .principal {
+        max-width: 600px;
+        margin: 0 auto;
+        background: var(--blanco);
+        border-radius: 18px;
+        box-shadow: 0 2px 16px #00baff22;
+        padding: 2rem 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .info {
+        color: #555;
+        font-size: 1.1rem;
+        text-align: center;
+        margin-top: 1.5rem;
+      }
+      footer {
+        margin-top: auto;
+        padding: 1rem 0 0.5rem 0;
+        text-align: center;
+        color: #888;
+        font-size: 0.95rem;
+      }
+      .enlaces-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        padding: 0;
+        margin: 0;
+      }
+      .enlace-tarjeta {
+        background: var(--blanco);
+        border-radius: 18px;
+        box-shadow: 0 4px 22px #00baff18;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 2.1rem 1.3rem 1.5rem 1.3rem;
+        cursor: pointer;
+        transition: box-shadow 0.22s, transform 0.18s, background 0.22s;
+        position: relative;
+        border: none;
+        outline: none;
+        min-height: 90px;
+        text-decoration: none;
+      }
+      .enlace-tarjeta:hover {
+        box-shadow: 0 8px 32px #00baff33;
+        background: #f2fbff;
+        transform: translateY(-2px) scale(1.03);
+      }
+      body.dark .enlace-tarjeta {
+        background: #23272a;
+        box-shadow: 0 4px 22px #00baff33;
+      }
+      body.dark .enlace-tarjeta:hover {
+        background: #1b2a36;
+      }
+      .enlace-nombre {
+        font-size: 1.13rem;
+        font-weight: 650;
+        color: var(--azul-oscuro);
+        letter-spacing: 0.01em;
+        margin-bottom: 0.1em;
+        line-height: 1.25;
+        word-break: break-word;
+        transition: color 0.3s, font-size 0.2s;
+      }
+      body.dark .enlace-nombre {
+        color: var(--oscuro-texto);
+      }
+      @media (max-width: 600px) {
+        header { padding: 1rem 0.2rem 1rem 0.2rem; }
+        .principal { padding: 1.2rem 0.5rem; }
+        .enlaces-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        .enlace-tarjeta {
+          padding: 1.2rem 0.8rem 1.1rem 0.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header style="text-align:center; margin-bottom:2.1rem;">
+      <div style="margin-bottom:0.7rem;">
+        <picture>
+          <source srcset="/logos/akantar-logo-outline.png" media="(prefers-color-scheme: dark)">
+          <img src="/logos/akantar-logo.png" alt="Logo Akantar" class="logo-akantar" style="height:62px;max-width:90vw;" loading="lazy" />
+        </picture>
+      </div>
+      <div class="bienvenida" style="margin-bottom:1.1rem;">{mensajeBienvenida}</div>
+      <h1 style="display:flex;align-items:center;justify-content:center;gap:0.7em;font-size:1.45rem;">
+        <button id="modo-toggle" class="modo-btn" aria-label="Cambiar modo">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="13" cy="13" r="10" fill="#222" stroke="#00baff" stroke-width="2"/>
+            <path d="M13 5a8 8 0 100 16 8 8 0 000-16z" fill="#fff"/>
+          </svg>
+        </button>
+        <img src="/logos/kubo-logo.png" alt="Logo Kubo" class="logo-kubo" style="height:36px;vertical-align:middle;margin-right:0.6em;" loading="lazy" />
+        Kubo
+      </h1>
+    </header>
+    <main class="principal">
+      <h1>Mesas disponibles</h1>
+      {error ? (
+        <div style="color:#fff;background:#e53935;padding:1rem;border-radius:12px;text-align:center;max-width:500px;margin:2rem auto 0 auto;font-weight:bold;">
+          {error}
+        </div>
+      ) : (
+        <div class="enlaces-grid">
+          {mesas && mesas.length > 0 ? (
+            mesas.map((mesa) => (
+              <a
+                class="enlace-tarjeta"
+                href={`/${mesa.id}`}
+              >
+                <span class="enlace-nombre">{mesa.nombre}</span>
+                <span class="enlace-url">Mesa #{mesa.id}</span>
+              </a>
+            ))
+          ) : (
+            <div style="padding:2rem;text-align:center;opacity:0.7;">No hay mesas disponibles.</div>
+          )}
+        </div>
+      )}
+    </main>
+    <footer>
+      <span>Powered by <img src="/logos/kubo-logo.png" alt="Kubo" style="height:1em;vertical-align:middle;margin-right:0.2em;"/> Kubo</span>
+    </footer>
+  </body>
+</html>

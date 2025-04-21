@@ -1,0 +1,671 @@
+---
+import { fetchMesas, fetchEnlacesPorMesa, fetchConfig } from "../utils/api.js";
+let mesas = [];
+let enlacesPorMesa = {};
+let mensajeBienvenida = '';
+let error = '';
+let mesaExpandida = null;
+try {
+  mesas = await fetchMesas();
+  enlacesPorMesa = {};
+  for (const mesa of mesas) {
+    enlacesPorMesa[mesa.id] = await fetchEnlacesPorMesa(mesa.id);
+  }
+  const config = await fetchConfig('bienvenida');
+  mensajeBienvenida = config.valor;
+} catch (e) {
+  error = 'No se pudo conectar con el servidor. Por favor intenta más tarde o revisa la configuración.';
+}
+function getMesaUrl(id) {
+  // Aseguramos que la URL sea correcta para la ruta [mesa].astro
+  return `/${id}`;
+}
+function getMesaQRUrl(id) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${globalThis.location?.origin || ''}/mesa/${id}`;
+}
+
+function toggleExpandMesa(id) {
+  mesaExpandida = mesaExpandida === id ? null : id;
+}
+---
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <title>Administración de Mesas | Kubo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      :root {
+        --azul-principal: #00baff;
+        --azul-oscuro: #1d335c;
+        --blanco: #fff;
+        --gris-fondo: #f7f7fb;
+        --oscuro-bg: #181a1b;
+        --oscuro-card: #23272a;
+        --oscuro-texto: #e6e6e6;
+        --oscuro-acento: #00baff;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: var(--gris-fondo);
+        color: var(--azul-oscuro);
+        min-height: 100vh;
+        transition: background-color 0.3s ease, color 0.3s ease;
+        display: flex;
+        flex-direction: column;
+      }
+      body.dark {
+        background: var(--oscuro-bg);
+        color: var(--oscuro-texto);
+      }
+      header {
+        background: var(--blanco);
+        padding: 1.5rem 1rem 1rem 1rem;
+        text-align: center;
+        border-radius: 0 0 24px 24px;
+        box-shadow: 0 2px 12px #00baff22;
+        margin-bottom: 1.2rem;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      }
+      
+      body.dark header {
+        background: var(--oscuro-card);
+        box-shadow: 0 2px 12px rgba(0, 186, 255, 0.15);
+      }
+      .logo-akantar {
+        height: 60px;
+        margin-bottom: 0.5rem;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      
+      .logo-light {
+        display: block;
+      }
+      
+      .logo-dark {
+        display: none;
+      }
+      
+      body.dark .logo-light {
+        display: none;
+      }
+      
+      body.dark .logo-dark {
+        display: block;
+      }
+      .logo-kubo {
+        height: 36px;
+        vertical-align: middle;
+        margin-right: 0.5rem;
+      }
+      .bienvenida {
+        color: var(--azul-oscuro);
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0.5rem 0 0 0;
+      }
+      .mesas-lista {
+        padding: 16px;
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .enlaces-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        padding: 0;
+        margin: 0;
+      }
+      
+      @media (max-width: 768px) {
+        .enlaces-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        .mesas-lista {
+          padding: 10px;
+        }
+      }
+      /* Estilos por peso igual que en [mesa].astro */
+      .enlace-tarjeta.peso-5 {
+        font-size: 1.25rem;
+        padding: 2.1rem 1.2rem 1.5rem 1.2rem;
+        box-shadow: 0 8px 32px #00baff44;
+        z-index: 2;
+      }
+      .enlace-tarjeta.peso-4 {
+        font-size: 1.13rem;
+        padding: 1.7rem 1.1rem 1.2rem 1.1rem;
+        box-shadow: 0 6px 22px #00baff33;
+        z-index: 1;
+      }
+      .enlace-tarjeta.peso-3 {
+        font-size: 1.04rem;
+        padding: 1.3rem 1rem 1rem 1rem;
+        box-shadow: 0 4px 16px #00baff22;
+      }
+      .enlace-tarjeta.peso-2 {
+        font-size: 0.97rem;
+        padding: 1.05rem 0.8rem 0.8rem 0.8rem;
+        box-shadow: 0 2px 8px #00baff18;
+      }
+      .enlace-tarjeta.peso-1 {
+        font-size: 0.92rem;
+        padding: 0.7rem 0.5rem 0.6rem 0.5rem;
+        opacity: 0.85;
+        box-shadow: 0 1px 4px #00baff10;
+      }
+      .enlace-tarjeta {
+        background: var(--blanco);
+        border-radius: 10px;
+        box-shadow: 0 3px 15px #00baff12;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 0.8rem 1rem;
+        margin-bottom: 0.4rem;
+        cursor: pointer;
+        transition: box-shadow 0.22s, transform 0.18s, background 0.22s;
+        position: relative;
+        border: none;
+        outline: none;
+      }
+      .enlace-tarjeta:hover {
+        box-shadow: 0 8px 32px #00baff33;
+        background: #f2fbff;
+        transform: translateY(-2px) scale(1.03);
+      }
+      body.dark .enlace-tarjeta {
+        background: #23272a;
+        box-shadow: 0 4px 22px #00baff33;
+      }
+      body.dark .enlace-tarjeta:hover {
+        background: #1b2a36;
+      }
+      .enlaces-grid {
+        gap: 1.1rem;
+      }
+      @media (max-width: 600px) {
+        .enlaces-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        .enlace-tarjeta.peso-5 { font-size: 1.09rem; padding: 1.2rem 0.8rem 1.1rem 0.8rem; }
+        .enlace-tarjeta.peso-4 { font-size: 1.03rem; padding: 1.05rem 0.7rem 0.9rem 0.7rem; }
+        .enlace-tarjeta.peso-3 { font-size: 0.97rem; padding: 0.9rem 0.6rem 0.7rem 0.6rem; }
+        .enlace-tarjeta.peso-2 { font-size: 0.92rem; padding: 0.7rem 0.5rem 0.6rem 0.5rem; }
+        .enlace-tarjeta.peso-1 { font-size: 0.89rem; padding: 0.5rem 0.4rem 0.4rem 0.4rem; }
+        .enlace-tarjeta, .mesa-tarjeta {
+          padding: 1.2rem 0.8rem 1.1rem 0.8rem;
+        }
+      }
+      .enlace-nombre {
+        font-size: 1.13rem;
+        font-weight: 650;
+        color: var(--azul-oscuro);
+        letter-spacing: 0.01em;
+        margin-bottom: 0.1em;
+        line-height: 1.25;
+        word-break: break-word;
+        transition: color 0.3s, font-size 0.2s;
+      }
+      body.dark .enlace-nombre {
+        color: var(--oscuro-texto);
+      }
+      .mesa-tarjeta {
+        background: var(--blanco);
+        border-radius: 12px;
+        box-shadow: 0 4px 22px #00baff18;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        padding: 1rem;
+        overflow: hidden;
+        cursor: pointer;
+        transition: box-shadow 0.3s, transform 0.3s, background-color 0.3s;
+        transform-origin: center;
+        position: relative;
+        margin-bottom: 0.5rem;
+      }
+      
+      .mesa-tarjeta:hover, .mesa-tarjeta.expanded {
+        box-shadow: 0 8px 32px #00baff33;
+        background: #f2fbff;
+        transform: translateY(-2px) scale(1.03);
+      }
+      
+      body.dark .mesa-tarjeta {
+        background: var(--oscuro-card);
+        box-shadow: 0 4px 22px rgba(0, 186, 255, 0.1);
+      }
+      
+      body.dark .mesa-tarjeta:hover, body.dark .mesa-tarjeta.expanded {
+        background: #1b2a36;
+        box-shadow: 0 8px 32px rgba(0, 186, 255, 0.2);
+      }
+      
+      @media (max-width: 768px) {
+        .mesa-tarjeta {
+          padding: 1rem;
+        }
+      }
+      .mesa-nombre {
+        font-size: 1.13rem;
+        font-weight: 700;
+        color: var(--azul-oscuro);
+        letter-spacing: 0.01em;
+        margin-bottom: 0.1em;
+        line-height: 1.25;
+        word-break: break-word;
+        transition: color 0.3s, font-size 0.2s;
+      }
+      body.dark .mesa-nombre {
+        color: var(--oscuro-texto);
+      }
+      
+      /* Estilos para el botón de cambio de tema */
+      .theme-toggle {
+        background: var(--azul-principal);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        cursor: pointer;
+        box-shadow: 0 2px 8px #00baff22;
+        transition: background 0.2s, transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .theme-toggle:hover {
+        transform: scale(1.05);
+        background: var(--azul-oscuro);
+      }
+      
+      .icono-modo {
+        width: 20px;
+        height: 20px;
+        fill: white;
+        position: absolute;
+        transition: opacity 0.3s, transform 0.3s;
+      }
+      
+      /* Control de visibilidad de iconos */
+      .icono-sol {
+        opacity: 0;
+        transform: scale(0.7);
+      }
+      
+      .icono-luna {
+        opacity: 1;
+        transform: scale(1);
+      }
+      
+      /* En modo oscuro se invierten */
+      body.dark .icono-sol {
+        opacity: 1;
+        transform: scale(1);
+      }
+      
+      body.dark .icono-luna {
+        opacity: 0;
+        transform: scale(0.7);
+      }
+      .moon-icon {
+        display: block;
+      }
+      .sun-icon {
+        display: none;
+      }
+      body.dark .moon-icon {
+        display: none;
+      }
+      body.dark .sun-icon {
+        display: block;
+      }
+      
+      /* Estilos adicionales para las mesas interactivas */
+      .mesa-enlaces-container {
+        display: none;
+        width: 100%;
+        margin-top: 1.2rem;
+      }
+      .mesa-tarjeta.expanded .mesa-enlaces-container {
+        display: block;
+      }
+      
+      /* Botones de administración para cada mesa */
+      .mesa-admin-buttons {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .mesa-admin-button {
+        background: var(--azul-principal);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .mesa-admin-button:hover {
+        background: var(--azul-oscuro);
+      }
+      body.dark .mesa-admin-button {
+        background: var(--oscuro-acento);
+      }
+      body.dark .mesa-admin-button:hover {
+        background: #0090cc;
+      }
+      
+      /* Estilos para el modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+      }
+      .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+      .modal-container {
+        background: var(--blanco);
+        padding: 2rem;
+        border-radius: 12px;
+        max-width: 90%;
+        width: 400px;
+        text-align: center;
+        box-shadow: 0 5px 30px rgba(0, 0, 0, 0.15);
+        transform: translateY(20px);
+        transition: transform 0.3s;
+      }
+      .modal-overlay.active .modal-container {
+        transform: translateY(0);
+      }
+      body.dark .modal-container {
+        background: var(--oscuro-card);
+        color: var(--oscuro-texto);
+      }
+      .modal-close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 24px;
+        cursor: pointer;
+        color: #888;
+        border: none;
+        background: transparent;
+      }
+      .modal-close:hover {
+        color: #333;
+      }
+      body.dark .modal-close:hover {
+        color: #ddd;
+      }
+      .modal-title {
+        margin-top: 0;
+        color: var(--azul-oscuro);
+        font-size: 1.4rem;
+        margin-bottom: 1rem;
+      }
+      body.dark .modal-title {
+        color: var(--oscuro-texto);
+      }
+      .qr-image {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 1rem;
+        border: 1px solid #eee;
+        padding: 10px;
+      }
+      body.dark .qr-image {
+        border-color: #444;
+      }
+    </style>
+  </head>
+  <body>
+    <header style="text-align:center; margin-bottom:2.1rem;">
+      <div style="display:flex; justify-content:flex-end; margin-bottom:0.5rem;">
+        <button id="theme-toggle" class="theme-toggle" title="Cambiar modo claro/oscuro" aria-label="Cambiar modo claro/oscuro">
+          <!-- Icono de sol (modo claro) -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icono-modo icono-sol">
+            <path d="M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM19.0711 3.51472L20.4853 4.92893L18.364 7.05025L16.9497 5.63604L19.0711 3.51472ZM5.63604 16.9497L7.05025 18.364L4.92893 20.4853L3.51472 19.0711L5.63604 16.9497ZM23 11V13H20V11H23ZM4 11V13H1V11H4Z" />
+          </svg>
+          <!-- Icono de luna (modo oscuro) -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icono-modo icono-luna">
+            <path d="M10 6C10 10.4183 13.5817 14 18 14C19.4386 14 20.7885 13.6203 21.9549 12.9556C21.4738 18.0302 17.2005 22 12 22C6.47715 22 2 17.5228 2 12C2 6.79948 5.9698 2.52616 11.0444 2.04507C10.3797 3.21152 10 4.56142 10 6ZM4 12C4 16.4183 7.58172 20 12 20C14.9654 20 17.5782 18.3788 18.9204 16H18C11.9249 16 7 11.0751 7 5C7 4.65279 7.02413 4.31149 7.07089 3.97738C5.26935 5.78041 4 8.71776 4 12Z" />
+          </svg>
+        </button>
+      </div>
+      <div class="header-content">
+        <img src="/logos/akantar-logo.png" alt="Akantar" class="logo-akantar logo-light" />
+        <img src="/logos/akantar-logo-outline.png" alt="Akantar" class="logo-akantar logo-dark" />
+        <p class="bienvenida">¡Bienvenido al panel de administración!</p>
+      </div>
+      <h1 style="display:flex;align-items:center;justify-content:center;gap:0.7em;font-size:1.45rem;">
+        <img src="/logos/kubo-logo.png" alt="Logo Kubo" class="logo-kubo" style="height:36px;vertical-align:middle;margin-right:0.6em;" loading="lazy" />
+        Panel de Administración
+      </h1>
+    </header>
+    <h1>Administración de Mesas</h1>
+    {error ? (
+      <div style="color:#fff;background:#e53935;padding:1rem;border-radius:12px;text-align:center;max-width:500px;margin:2rem auto 0 auto;font-weight:bold;">
+        {error}
+      </div>
+    ) : (
+      <div class="mesas-lista">
+        <div class="enlaces-grid">
+          {mesas && mesas.length > 0 ? (
+            mesas.map((mesa) => (
+              <div
+                class={`mesa-tarjeta${mesaExpandida === mesa.id ? ' expanded' : ''}`}
+                data-mesa-id={mesa.id}
+                tabindex="0"
+                role="button"
+                aria-expanded={mesaExpandida === mesa.id}
+              >
+                <span class="mesa-nombre">{mesa.nombre}</span>
+                <span style="font-size:0.97rem;color:#6a7a8c;">Mesa #{mesa.id}</span>
+                
+                <div class="mesa-admin-buttons">
+                  <button class="mesa-admin-button" data-action="editar" data-mesa-id={mesa.id}>Editar</button>
+                  <button class="mesa-admin-button" data-action="qr" data-mesa-id={mesa.id}>Ver QR</button>
+                  <button class="mesa-admin-button" data-action="agregar" data-mesa-id={mesa.id}>+ Enlace</button>
+                </div>
+                
+                <div class="mesa-enlaces-container">
+                  {enlacesPorMesa[mesa.id] && enlacesPorMesa[mesa.id].length > 0 ? (
+                    <div class="enlaces-grid">
+                      {enlacesPorMesa[mesa.id]
+                        .slice()
+                        .sort((a, b) => (b.peso || 1) - (a.peso || 1))
+                        .map(enlace => {
+                          let nombre = decodeURIComponent(escape(unescape(encodeURIComponent(enlace.nombre || ''))));
+                          const peso = enlace.peso || 1;
+                          return (
+                            <a
+                              class={`enlace-tarjeta peso-${peso}`}
+                              href={enlace.url.startsWith('http') ? enlace.url : `https://${enlace.url}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <span class="enlace-nombre">{nombre}</span>
+                              <span class="enlace-url">{enlace.url}</span>
+                              <div class="enlace-admin-buttons">
+                                <button class="mesa-admin-button" data-action="editar-enlace" data-enlace-id={enlace.id}>Editar</button>
+                                <button class="mesa-admin-button" data-action="eliminar-enlace" data-enlace-id={enlace.id}>Eliminar</button>
+                              </div>
+                            </a>
+                          );
+                        })}
+                    </div>
+                  ) : (
+                    <div style="padding:1.2rem;text-align:center;opacity:0.7;">No hay enlaces disponibles.</div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style="padding:2rem;text-align:center;opacity:0.7;">No hay mesas disponibles.</div>
+          )}
+        </div>
+      </div>
+    )}
+    <!-- Modal para mostrar QR -->
+    <div id="qr-modal" class="modal-overlay">
+      <div class="modal-container">
+        <button class="modal-close">&times;</button>
+        <h3 class="modal-title">Código QR para Mesa</h3>
+        <div id="qr-content">
+          <img id="qr-image" class="qr-image" src="" alt="Código QR de la mesa">
+          <p id="qr-url"></p>
+        </div>
+        <button class="mesa-admin-button" id="qr-download">Descargar QR</button>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // Funcionalidad del botón de cambio de tema
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (themeToggleBtn) {
+          // Verificar si hay una preferencia de tema guardada
+          const savedTheme = localStorage.getItem('theme');
+          if (savedTheme === 'dark') {
+            document.body.classList.add('dark');
+          }
+          
+          themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            // Guardar preferencia en localStorage
+            const isDark = document.body.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          });
+        }
+        
+        // Funcionalidad para mesas expandibles
+        document.querySelectorAll('.mesa-tarjeta').forEach(mesa => {
+          mesa.addEventListener('click', (e) => {
+            // No expandir/colapsar si se hace clic en un botón
+            if (e.target.classList.contains('mesa-admin-button')) {
+              return;
+            }
+            
+            const mesaId = mesa.getAttribute('data-mesa-id');
+            if (mesaId) {
+              // Comprobar si está expandida
+              const isExpanded = mesa.classList.contains('expanded');
+              
+              // Cerrar todas las mesas expandidas
+              document.querySelectorAll('.mesa-tarjeta').forEach(m => {
+                m.classList.remove('expanded');
+              });
+              
+              // Si no estaba expandida, expandirla
+              if (!isExpanded) {
+                mesa.classList.add('expanded');
+              }
+            }
+          });
+        });
+        
+        // Funcionalidad para el modal QR
+        const qrModal = document.getElementById('qr-modal');
+        const closeButton = qrModal.querySelector('.modal-close');
+        const downloadButton = document.getElementById('qr-download');
+        
+        // Cerrar modal al hacer clic en el botón de cerrar
+        closeButton.addEventListener('click', () => {
+          qrModal.classList.remove('active');
+        });
+        
+        // Cerrar modal al hacer clic fuera del contenido
+        qrModal.addEventListener('click', (e) => {
+          if (e.target === qrModal) {
+            qrModal.classList.remove('active');
+          }
+        });
+        
+        // Descargar QR
+        downloadButton.addEventListener('click', () => {
+          const qrImage = document.getElementById('qr-image');
+          const mesaTitle = document.querySelector('.modal-title').textContent;
+          
+          // Crear un enlace temporal para la descarga
+          const link = document.createElement('a');
+          link.href = qrImage.src;
+          link.download = mesaTitle.replace(/[^a-zA-Z0-9]/g, '_') + '.png';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+        
+        // Manejadores para los botones de administración
+        document.querySelectorAll('.mesa-admin-button').forEach(button => {
+          button.addEventListener('click', (e) => {
+            e.stopPropagation(); // Evitar que el clic se propague a la tarjeta
+            
+            const action = button.getAttribute('data-action');
+            const mesaId = button.getAttribute('data-mesa-id');
+            const enlaceId = button.getAttribute('data-enlace-id');
+            
+            switch(action) {
+              case 'editar':
+                alert('Editar mesa ' + mesaId + ' (Funcionalidad pendiente)');
+                break;
+              case 'qr':
+                // Obtener el modal y preparar el contenido
+                const modal = document.getElementById('qr-modal');
+                const qrImg = document.getElementById('qr-image');
+                const qrUrl = document.getElementById('qr-url');
+                const mesaTitle = document.querySelector('.modal-title');
+                const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${window.location.origin}/${mesaId}`;
+                
+                // Actualizar el contenido del modal
+                qrImg.src = qrSrc;
+                qrUrl.textContent = `${window.location.origin}/${mesaId}`;
+                
+                // Buscar el nombre de la mesa para el título
+                const mesaNombre = document.querySelector(`[data-mesa-id="${mesaId}"] .mesa-nombre`)?.textContent || `Mesa #${mesaId}`;
+                mesaTitle.textContent = `Código QR para ${mesaNombre}`;
+                
+                // Mostrar el modal
+                modal.classList.add('active');
+                break;
+              case 'agregar':
+                alert('Agregar enlace a mesa ' + mesaId + ' (Funcionalidad pendiente)');
+                break;
+              case 'editar-enlace':
+                alert('Editar enlace ' + enlaceId + ' (Funcionalidad pendiente)');
+                break;
+              case 'eliminar-enlace':
+                alert('Eliminar enlace ' + enlaceId + ' (Funcionalidad pendiente)');
+                break;
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
