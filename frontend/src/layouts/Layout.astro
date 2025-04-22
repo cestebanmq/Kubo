@@ -1,22 +1,82 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<meta name="description" content="Kubo - Sistema de enlaces QR por mesa para A Kantar Karaoke" />
+		<title>{Astro.props.title ? `${Astro.props.title} | Kubo` : 'Kubo - Sistema de enlaces'}</title>
 	</head>
 	<body>
 		<slot />
 	</body>
 </html>
 
-<style>
+<style is:global>
+	:root {
+		--azul-principal: #00baff;
+		--azul-oscuro: #1d335c;
+		--blanco: #fff;
+		--gris-fondo: #f7f7fb;
+		--oscuro-bg: #181a1b;
+		--oscuro-card: #23272a;
+		--oscuro-texto: #e6e6e6;
+		--oscuro-acento: #00baff;
+	}
+
 	html,
 	body {
 		margin: 0;
 		width: 100%;
 		height: 100%;
+		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+	}
+
+	/* Estilos base responsivos */
+	.container {
+		width: 100%;
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 0 1rem;
+	}
+
+	/* Indicadores de carga */
+	.loading {
+		opacity: 0.7;
+		pointer-events: none;
+		transition: opacity 0.3s;
+	}
+
+	.loading-spinner {
+		display: inline-block;
+		width: 1.5rem;
+		height: 1.5rem;
+		border: 2px solid var(--azul-principal);
+		border-radius: 50%;
+		border-top-color: transparent;
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	/* Mejoras de accesibilidad */
+	:focus-visible {
+		outline: 2px solid var(--azul-principal);
+		outline-offset: 2px;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border-width: 0;
 	}
 </style>
