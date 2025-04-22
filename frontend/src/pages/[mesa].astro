@@ -1,5 +1,6 @@
 ---
 // Importamos las funciones necesarias
+import Layout from '../layouts/Layout.astro';
 import { fetchMesas, fetchEnlacesPorMesa, fetchConfig } from '../utils/api.js';
 
 // Función para generar todas las rutas estáticas posibles
@@ -22,6 +23,7 @@ const { mesaData } = Astro.props;
 let enlaces = [];
 let mensajeBienvenida = '';
 let error = '';
+let isLoading = true;
 
 try {
   // Obtenemos los enlaces para esta mesa específica
@@ -30,17 +32,49 @@ try {
   // Obtenemos el mensaje de bienvenida
   const config = await fetchConfig('bienvenida');
   mensajeBienvenida = config.valor;
+  isLoading = false;
 } catch (e) {
   error = 'No se pudo conectar con el servidor. Por favor intenta más tarde o revisa la configuración.';
+  isLoading = false;
 }
 ---
 
-<html lang="es">
-  <head>
-    <meta charset="utf-8">
-    <title>Enlaces para Mesa {mesa}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<Layout title={`Enlaces para Mesa ${mesa}`}>
     <style>
+      /* Los estilos de variables ya están definidos en Layout.astro */
+      .main-content {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      
+      .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+      }
+      
+      .back-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--blanco);
+        color: var(--azul-oscuro);
+        text-decoration: none;
+        box-shadow: 0 2px 8px rgba(0, 186, 255, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      
+      .back-button:hover, .back-button:focus {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 186, 255, 0.2);
+      }
+      
       :root {
         --azul-principal: #00baff;
         --azul-oscuro: #1d335c;
@@ -474,14 +508,13 @@ try {
         };
       });
     </script>
-  </head>
-  <body>
+  <div class="main-content">
     <header>
       <div class="header-content">
-        <!-- Logo de Akantar con versiones para modo claro/oscuro -->
-        <img src="/logos/akantar-logo.png" alt="Akantar" class="logo-akantar logo-light" />
-        <img src="/logos/akantar-logo-outline.png" alt="Akantar" class="logo-akantar logo-dark" />
-        <p class="bienvenida">{mensajeBienvenida}</p>
+        <div class="logo-container">
+          <img src="/logos/akantar-logo.png" alt="Akantar" class="logo-akantar logo-light" />
+          <img src="/logos/akantar-logo-outline.png" alt="Akantar" class="logo-akantar logo-dark" />
+        </div>
         <button id="modo-toggle" class="modo-btn" title="Cambiar modo claro/oscuro" aria-label="Cambiar modo claro/oscuro">
           <!-- Icono de sol (modo claro) -->
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icono-modo icono-sol">
@@ -496,8 +529,14 @@ try {
       <h1>Mesa #{mesa}</h1>
     </header>
     <main>
-      {error ? (
-        <div style="color: #c00; text-align:center; font-weight:600; margin:2rem 0;">{error}</div>
+      {error && <div class="error" role="alert">{error}</div>}
+      
+      {isLoading ? (
+        <div class="loading-container">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <p class="sr-only">Cargando enlaces...</p>
+          <p>Cargando enlaces para la mesa {mesa}...</p>
+        </div>
       ) : (
         <div class="enlaces-grid">
           {enlaces && enlaces.length > 0 ? (
@@ -541,7 +580,7 @@ try {
       )}
     </main>
     <footer>
-      <span>Powered by <img src="/logos/kubo-logo.png" alt="Kubo" style="height:1em;vertical-align:middle;margin-right:0.2em;"/> Kubo</span>
+      <p>Kubo &copy; {new Date().getFullYear()} - A Kantar Karaoke</p>
     </footer>
-  </body>
-</html>
+  </div>
+</Layout>
