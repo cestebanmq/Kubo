@@ -11,7 +11,7 @@ try {
   for (const mesa of mesas) {
     enlacesPorMesa[mesa.id] = await fetchEnlacesPorMesa(mesa.id);
   }
-  const config = await fetchConfig('bienvenida');
+  const config = await fetchConfig('mensaje_bienvenida');
   mensajeBienvenida = config.valor;
 } catch (e) {
   error = 'No se pudo conectar con el servidor. Por favor intenta más tarde o revisa la configuración.';

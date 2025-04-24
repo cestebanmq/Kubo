@@ -30,7 +30,7 @@ try {
   enlaces = await fetchEnlacesPorMesa(mesa);
   
   // Obtenemos el mensaje de bienvenida
-  const config = await fetchConfig('bienvenida');
+  const config = await fetchConfig('mensaje_bienvenida');
   mensajeBienvenida = config.valor;
   isLoading = false;
 } catch (e) {
@@ -39,7 +39,8 @@ try {
 }
 ---
 
-<Layout title={`Enlaces para Mesa ${mesa}`}>
+<Layout title={`Enlaces para Mesa ${mesaData.nombre}`}>
+
     <style>
       /* Los estilos de variables ya están definidos en Layout.astro */
       .main-content {
@@ -526,7 +527,8 @@ try {
           </svg>
         </button>
       </div>
-      <h1>Mesa #{mesa}</h1>
+      {mensajeBienvenida}
+      <h1>Mesa {mesaData.nombre}</h1>
     </header>
     <main>
       {error && <div class="error" role="alert">{error}</div>}
@@ -568,7 +570,7 @@ try {
                     </div>
                     <div class="enlace-content">
                       <span class="enlace-nombre">{nombre}</span>
-                      <span class="enlace-url">{enlace.url}</span>
+                      <span class="enlace-url">{enlace.descripcion}</span>
                     </div>
                   </a>
                 );

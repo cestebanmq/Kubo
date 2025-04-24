@@ -1,25 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { fetchMesas, fetchConfig } from '../utils/api.js';
-
-// Variables para controlar el estado
-let mesas = [];
-let mensajeBienvenida = '';
-let error = '';
-let isLoading = true;
-
-try {
-  // Obtenemos los datos necesarios
-  mesas = await fetchMesas();
-  const config = await fetchConfig('bienvenida');
-  mensajeBienvenida = config.valor;
-  isLoading = false;
-} catch (e) {
-  error = 'No se pudo conectar con el servidor. Por favor intenta más tarde o revisa la configuración.';
-  isLoading = false;
-}
 ---
-
 <Layout title="Bienvenido">
     <script>
       document.addEventListener('DOMContentLoaded', function() {
@@ -33,16 +14,13 @@ try {
       });
     </script>
     <style>
-      /* Los estilos de variables ya están definidos en Layout.astro */
       body {
         background-color: var(--gris-fondo);
         transition: background-color 0.3s ease;
       }
-      
       body.dark {
         background-color: var(--oscuro-bg);
       }
-      
       .main-content {
         padding: 1rem;
         display: flex;
@@ -51,7 +29,6 @@ try {
         background-color: var(--gris-fondo);
         transition: background-color 0.3s ease;
       }
-      
       body.dark .main-content {
         background-color: var(--oscuro-bg);
       }
@@ -82,36 +59,17 @@ try {
         margin-left: auto;
         margin-right: auto;
       }
-      /* Control de visibilidad de logos según tema */
       .logo-light {
         display: block;
       }
-      
       .logo-dark {
         display: none;
       }
-      
       body.dark .logo-light {
         display: none;
       }
-      
       body.dark .logo-dark {
         display: block;
-      }
-      .logo-kubo {
-        height: 36px;
-        vertical-align: middle;
-        margin-right: 0.5rem;
-      }
-      .bienvenida {
-        color: var(--azul-oscuro);
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin: 0.5rem 0 0 0;
-        transition: color 0.3s;
-      }
-      body.dark .bienvenida {
-        color: var(--oscuro-acento);
       }
       .modo-btn {
         position: absolute;
@@ -130,12 +88,10 @@ try {
         align-items: center;
         justify-content: center;
       }
-      
       .modo-btn:hover {
         transform: scale(1.05);
         background: var(--azul-oscuro);
       }
-      
       .icono-modo {
         width: 20px;
         height: 20px;
@@ -143,24 +99,18 @@ try {
         position: absolute;
         transition: opacity 0.3s, transform 0.3s;
       }
-      
-      /* Control de visibilidad de iconos */
       .icono-sol {
         opacity: 0;
         transform: scale(0.7);
       }
-      
       .icono-luna {
         opacity: 1;
         transform: scale(1);
       }
-      
-      /* En modo oscuro se invierten */
       body.dark .icono-sol {
         opacity: 1;
         transform: scale(1);
       }
-      
       body.dark .icono-luna {
         opacity: 0;
         transform: scale(0.7);
@@ -168,9 +118,10 @@ try {
       h1 {
         text-align: center;
         color: var(--azul-oscuro);
-        font-size: 1.7rem;
+        font-size: 2.1rem;
         margin-bottom: 1.2rem;
         transition: color 0.3s;
+        font-weight: 800;
       }
       body.dark h1 {
         color: var(--oscuro-acento);
@@ -181,9 +132,10 @@ try {
         background: var(--blanco);
         border-radius: 18px;
         box-shadow: 0 2px 16px #00baff22;
-        padding: 2rem 1.5rem;
+        padding: 2.5rem 1.5rem 2rem 1.5rem;
         margin-bottom: 2rem;
         transition: background-color 0.3s, box-shadow 0.3s;
+        text-align: center;
       }
       body.dark .principal {
         background: var(--oscuro-card);
@@ -191,34 +143,31 @@ try {
       }
       .info {
         color: #555;
-        font-size: 1.1rem;
+        font-size: 1.18rem;
         text-align: center;
         margin-top: 1.5rem;
         transition: color 0.3s;
+        font-weight: 500;
       }
       body.dark .info {
         color: #aaa;
       }
-      
-      .error {
-        background: #ffebee;
-        color: #c62828;
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-        text-align: center;
-        font-weight: 500;
-        border-left: 4px solid #c62828;
+      .qr-ilustracion {
+        display: block;
+        margin: 2rem auto 1.5rem auto;
+        width: 120px;
+        height: 120px;
+        opacity: 0.92;
       }
-      
-      .loading-container {
-        text-align: center;
-        padding: 2rem 0;
+      .kubo-logo {
+        width: 60px;
+        margin-bottom: 1.2rem;
+        opacity: 0.93;
       }
-      
-      .loading-container p {
-        margin-top: 1rem;
-        color: var(--azul-oscuro);
+      .destacado {
+        color: var(--azul-principal);
+        font-weight: 700;
+        font-size: 1.15rem;
       }
       footer {
         margin-top: auto;
@@ -231,87 +180,10 @@ try {
       body.dark footer {
         color: #777;
       }
-      .enlaces-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 1.5rem;
-        padding: 0;
-        margin: 0;
-      }
-      .enlace-mesa {
-        display: block;
-        background: var(--blanco);
-        border-radius: 12px;
-        padding: 1.2rem 1rem;
-        text-decoration: none;
-        color: var(--azul-oscuro);
-        box-shadow: 0 2px 8px rgba(0, 186, 255, 0.1);
-        transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s, color 0.3s;
-        text-align: center;
-      }
-      body.dark .enlace-mesa {
-        background: var(--oscuro-card);
-        color: var(--oscuro-texto);
-        box-shadow: 0 2px 8px rgba(0, 186, 255, 0.15);
-      }
-      .enlace-mesa:hover, .enlace-mesa:focus {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 186, 255, 0.2);
-        outline: none;
-      }
-      body.dark .enlace-mesa:hover, body.dark .enlace-mesa:focus {
-        box-shadow: 0 4px 12px rgba(0, 186, 255, 0.3);
-      }
-      .enlace-mesa:focus-visible {
-        outline: 2px solid var(--azul-principal);
-        outline-offset: 2px;
-      }
-      .mesa-id {
-        display: inline-block;
-        background: var(--azul-principal);
-        color: white;
-        border-radius: 50%;
-        width: 2.5rem;
-        height: 2.5rem;
-        line-height: 2.5rem;
-        text-align: center;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-        transition: background-color 0.3s;
-      }
-      
-      .mesa-nombre {
-        font-weight: 600;
-        font-size: 1.1rem;
-        transition: color 0.3s;
-      }
-      
-      body.dark .mesa-nombre {
-        color: var(--oscuro-texto);
-      }
-      .enlace-nombre {
-        font-size: 1.13rem;
-        font-weight: 650;
-        color: var(--azul-oscuro);
-        letter-spacing: 0.01em;
-        margin-bottom: 0.1em;
-        line-height: 1.25;
-        word-break: break-word;
-        transition: color 0.3s, font-size 0.2s;
-      }
-      body.dark .enlace-nombre {
-        color: var(--oscuro-texto);
-      }
       @media (max-width: 600px) {
         header { padding: 1rem 0.2rem 1rem 0.2rem; }
         .principal { padding: 1.2rem 0.5rem; }
-        .enlaces-grid {
-          grid-template-columns: 1fr;
-          gap: 1rem;
-        }
-        .enlace-tarjeta {
-          padding: 1.2rem 0.8rem 1.1rem 0.8rem;
-        }
+        h1 { font-size: 1.3rem; }
       }
     </style>
   <div class="main-content">
@@ -322,47 +194,23 @@ try {
           <img src="/logos/akantar-logo-outline.png" alt="A Kantar Karaoke" class="logo-akantar logo-dark" />
         </div>
         <button id="modo-toggle" class="modo-btn" title="Cambiar modo claro/oscuro" aria-label="Cambiar modo claro/oscuro">
-          <!-- Icono de sol (modo claro) -->
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icono-modo icono-sol">
             <path d="M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM19.0711 3.51472L20.4853 4.92893L18.364 7.05025L16.9497 5.63604L19.0711 3.51472ZM5.63604 16.9497L7.05025 18.364L4.92893 20.4853L3.51472 19.0711L5.63604 16.9497ZM23 11V13H20V11H23ZM4 11V13H1V11H4Z" />
           </svg>
-          <!-- Icono de luna (modo oscuro) -->
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icono-modo icono-luna">
             <path d="M10 6C10 10.4183 13.5817 14 18 14C19.4386 14 20.7885 13.6203 21.9549 12.9556C21.4738 18.0302 17.2005 22 12 22C6.47715 22 2 17.5228 2 12C2 6.79948 5.9698 2.52616 11.0444 2.04507C10.3797 3.21152 10 4.56142 10 6ZM4 12C4 16.4183 7.58172 20 12 20C14.9654 20 17.5782 18.3788 18.9204 16H18C11.9249 16 7 11.0751 7 5C7 4.65279 7.02413 4.31149 7.07089 3.97738C5.26935 5.78041 4 8.71776 4 12Z" />
           </svg>
         </button>
       </div>
-      <p class="bienvenida">{mensajeBienvenida}</p>
     </header>
-    
-    <h1>Selecciona tu mesa</h1>
-    
+    <h1>Bienvenido a Kubo</h1>
     <div class="principal">
-      {error && <div class="error" role="alert">{error}</div>}
-      
-      {isLoading ? (
-        <div class="loading-container">
-          <div class="loading-spinner" aria-hidden="true"></div>
-          <p class="sr-only">Cargando mesas...</p>
-          <p>Cargando información de mesas...</p>
-        </div>
-      ) : (
-        <ul class="enlaces-grid">
-          {mesas.map(mesa => (
-            <li>
-              <a href={`/${mesa.id}`} class="enlace-mesa">
-                <span class="mesa-id">{mesa.id}</span>
-                <span class="mesa-nombre">{mesa.nombre}</span>
-              </a>
-            </li>
-          ))}          
-        </ul>
-      )}
-      
-      <p class="info">Selecciona tu mesa para ver los enlaces disponibles.</p>
+      <img src="/logos/kubo-logo.png" alt="Logo Kubo" class="kubo-logo" />
+      <p class="info">Kubo es el sistema digital de enlaces QR para <span class="destacado">A Kantar Karaoke</span>.<br/><br/>Escanea el <b>QR de tu mesa</b> para acceder a la experiencia personalizada, ver enlaces útiles y participar en la diversión.<br/><br/>Si aún no has escaneado el QR, búscalo en tu mesa y accede desde tu móvil.<br/><br/><span class="destacado">¡Vive la experiencia A Kantar con Kubo!</span></p>
+      <img src="/logos/Kubo-scan.png" alt="Ilustración QR" class="qr-ilustracion" />
     </div>
-    
     <footer>
       <p>Kubo &copy; {new Date().getFullYear()} - A Kantar Karaoke</p>
     </footer>
   </div>
+</Layout>
