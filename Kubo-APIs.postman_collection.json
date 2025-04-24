@@ -1,0 +1,115 @@
+{
+  "info": {
+    "_postman_id": "b1e1e1e1-1234-5678-9abc-def012345678",
+    "name": "Kubo API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Colección de endpoints principales del API de Kubo para pruebas en Postman."
+  },
+  "item": [
+    {
+      "name": "Obtener todas las mesas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/mesas",
+          "host": ["{{base_url}}"],
+          "path": ["mesas"]
+        }
+      },
+      "response": [
+        {
+          "name": "Ejemplo de respuesta",
+          "originalRequest": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/mesas",
+              "host": ["{{base_url}}"],
+              "path": ["mesas"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "[{\n  \"id\": \"mesa1\",\n  \"nombre\": \"Mesa 1\"\n}, {\n  \"id\": \"mesa2\",\n  \"nombre\": \"Mesa 2\"\n}]"
+        }
+      ]
+    },
+    {
+      "name": "Obtener enlaces por mesa",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/enlaces?mesa=mesa1",
+          "host": ["{{base_url}}"],
+          "path": ["enlaces"],
+          "query": [
+            {"key": "mesa", "value": "mesa1"}
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Ejemplo de respuesta",
+          "originalRequest": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/enlaces?mesa=mesa1",
+              "host": ["{{base_url}}"],
+              "path": ["enlaces"],
+              "query": [
+                {"key": "mesa", "value": "mesa1"}
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "[{\n  \"id\": \"enlace1\",\n  \"nombre\": \"Spotify\",\n  \"url\": \"https://spotify.com\",\n  \"peso\": 5\n}]"
+        }
+      ]
+    },
+    {
+      "name": "Obtener configuración (mensaje de bienvenida)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/configuracion?clave=mensaje_bienvenida",
+          "host": ["{{base_url}}"],
+          "path": ["configuracion"],
+          "query": [
+            {"key": "clave", "value": "mensaje_bienvenida"}
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Ejemplo de respuesta",
+          "originalRequest": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/configuracion?clave=mensaje_bienvenida",
+              "host": ["{{base_url}}"],
+              "path": ["configuracion"],
+              "query": [
+                {"key": "clave", "value": "mensaje_bienvenida"}
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"clave\": \"mensaje_bienvenida\",\n  \"valor\": \"¡Bienvenido a Kubo!\"\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://script.google.com/macros/s/AKfycbyuW6zNTmx5qepw5JX5TgHAVhvxOY5qOPXc84TFTFC3ODG2C43-rNI7_4MoZd1BgMH6/exec"
+    }
+  ]
+}
