@@ -1,6 +1,6 @@
 // Utilidad para consumir la API del backend GAS
 // Puedes ajustar la URL base según despliegues
-const API_BASE_URL = import.meta.env.API_BASE_URL;
+const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL;
 
 // Modo fallback habilitado (true) - usará datos de prueba solo si falla la conexión
 const USAR_FALLBACK_SI_FALLA = true; // Cambia a false para deshabilitar completamente los datos de prueba
