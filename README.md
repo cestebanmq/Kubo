@@ -8,7 +8,7 @@ Este documento describe paso a paso las fases del desarrollo de la plataforma Ku
 
   kubo/
   ├── frontend/           # Proyecto Astro
-  └── backend/            # Scripts de Google Apps Script
+  └── backend/            # Scripts de Google Apps Script.
   
 ---
 
