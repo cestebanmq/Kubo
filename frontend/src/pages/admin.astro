@@ -14,7 +14,9 @@ try {
   const config = await fetchConfig('mensaje_bienvenida');
   mensajeBienvenida = config.valor;
 } catch (e) {
-  error = 'No se pudo conectar con el servidor. Por favor intenta más tarde o revisa la configuración.';
+  error = 'No ha sido posible cargar la página. Por favor, contacte al administrador del sistema.';
+  mesas = [];
+  enlacesPorMesa = {};
 }
 function getMesaUrl(id) {
   // Aseguramos que la URL sea correcta para la ruta [mesa].astro
@@ -445,6 +447,7 @@ function toggleExpandMesa(id) {
     </style>
   </head>
   <body>
+    <div id="admin-panel" style="display:none;">
     <header style="text-align:center; margin-bottom:2.1rem;">
       <div style="display:flex; justify-content:flex-end; margin-bottom:0.5rem;">
         <button id="theme-toggle" class="theme-toggle" title="Cambiar modo claro/oscuro" aria-label="Cambiar modo claro/oscuro">
@@ -468,16 +471,15 @@ function toggleExpandMesa(id) {
         Panel de Administración
       </h1>
     </header>
-    <h1>Administración de Mesas</h1>
     {error ? (
       <div style="color:#fff;background:#e53935;padding:1rem;border-radius:12px;text-align:center;max-width:500px;margin:2rem auto 0 auto;font-weight:bold;">
         {error}
       </div>
     ) : (
-      <div class="mesas-lista">
-        <div class="enlaces-grid">
-          {mesas && mesas.length > 0 ? (
-            mesas.map((mesa) => (
+      mesas && mesas.length > 0 ? (
+        <div class="mesas-lista">
+          <div class="enlaces-grid">
+            {mesas.map((mesa) => (
               <div
                 class={`mesa-tarjeta${mesaExpandida === mesa.id ? ' expanded' : ''}`}
                 data-mesa-id={mesa.id}
@@ -487,13 +489,11 @@ function toggleExpandMesa(id) {
               >
                 <span class="mesa-nombre">{mesa.nombre}</span>
                 <span style="font-size:0.97rem;color:#6a7a8c;">Mesa #{mesa.id}</span>
-                
                 <div class="mesa-admin-buttons">
                   <button class="mesa-admin-button" data-action="editar" data-mesa-id={mesa.id}>Editar</button>
                   <button class="mesa-admin-button" data-action="qr" data-mesa-id={mesa.id}>Ver QR</button>
                   <button class="mesa-admin-button" data-action="agregar" data-mesa-id={mesa.id}>+ Enlace</button>
                 </div>
-                
                 <div class="mesa-enlaces-container">
                   {enlacesPorMesa[mesa.id] && enlacesPorMesa[mesa.id].length > 0 ? (
                     <div class="enlaces-grid">
@@ -525,12 +525,12 @@ function toggleExpandMesa(id) {
                   )}
                 </div>
               </div>
-            ))
-          ) : (
-            <div style="padding:2rem;text-align:center;opacity:0.7;">No hay mesas disponibles.</div>
-          )}
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div style="padding:2rem;text-align:center;opacity:0.7;">No hay mesas disponibles.</div>
+      )
     )}
     <!-- Modal para mostrar QR -->
     <div id="qr-modal" class="modal-overlay">
@@ -545,127 +545,62 @@ function toggleExpandMesa(id) {
       </div>
     </div>
 
+    </div>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        // Funcionalidad del botón de cambio de tema
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        if (themeToggleBtn) {
-          // Verificar si hay una preferencia de tema guardada
-          const savedTheme = localStorage.getItem('theme');
-          if (savedTheme === 'dark') {
-            document.body.classList.add('dark');
-          }
-          
-          themeToggleBtn.addEventListener('click', () => {
-            document.body.classList.toggle('dark');
-            // Guardar preferencia en localStorage
-            const isDark = document.body.classList.contains('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-          });
-        }
-        
-        // Funcionalidad para mesas expandibles
-        document.querySelectorAll('.mesa-tarjeta').forEach(mesa => {
-          mesa.addEventListener('click', (e) => {
-            // No expandir/colapsar si se hace clic en un botón
-            if (e.target.classList.contains('mesa-admin-button')) {
-              return;
+      let usuarioAutenticado = null;
+      let accesoDenegado = false;
+      let cargandoAuth = true;
+      let correoUsuario = "";
+      let panelVisible = false;
+      
+      function mostrarPanelSiAutorizado(email) {
+        fetch(`${import.meta.env.PUBLIC_API_BASE_URL}?endpoint=configuracion&clave=correos_autorizados`)
+          .then(res => res.json())
+          .then(data => {
+            const lista = (data.valor || "").split(",").map(c => c.trim().toLowerCase());
+            if (lista.includes(email.toLowerCase())) {
+              panelVisible = true;
+              accesoDenegado = false;
+            } else {
+              panelVisible = false;
+              accesoDenegado = true;
             }
-            
-            const mesaId = mesa.getAttribute('data-mesa-id');
-            if (mesaId) {
-              // Comprobar si está expandida
-              const isExpanded = mesa.classList.contains('expanded');
-              
-              // Cerrar todas las mesas expandidas
-              document.querySelectorAll('.mesa-tarjeta').forEach(m => {
-                m.classList.remove('expanded');
-              });
-              
-              // Si no estaba expandida, expandirla
-              if (!isExpanded) {
-                mesa.classList.add('expanded');
-              }
-            }
+            cargandoAuth = false;
+            document.getElementById('admin-panel').style.display = panelVisible ? '' : 'none';
+            document.getElementById('login-google').style.display = panelVisible ? 'none' : '';
+            document.getElementById('denegado').style.display = accesoDenegado ? '' : 'none';
+          })
+          .catch(() => {
+            accesoDenegado = true;
+            error = 'No ha sido posible cargar la página. Por favor, contacte al administrador del sistema.';
+            cargandoAuth = false;
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('login-google').style.display = '';
+            document.getElementById('denegado').style.display = '';
           });
-        });
-        
-        // Funcionalidad para el modal QR
-        const qrModal = document.getElementById('qr-modal');
-        const closeButton = qrModal.querySelector('.modal-close');
-        const downloadButton = document.getElementById('qr-download');
-        
-        // Cerrar modal al hacer clic en el botón de cerrar
-        closeButton.addEventListener('click', () => {
-          qrModal.classList.remove('active');
-        });
-        
-        // Cerrar modal al hacer clic fuera del contenido
-        qrModal.addEventListener('click', (e) => {
-          if (e.target === qrModal) {
-            qrModal.classList.remove('active');
+      }
+      window.onload = function() {
+        // Inicializar Google Identity Services
+        window.google.accounts.id.initialize({
+          client_id: "624775965967-kmc9a47h6lmb15t1483ulh3mcbpifbbo.apps.googleusercontent.com",
+          callback: (response) => {
+            // Decodificar el JWT para obtener el correo
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            correoUsuario = payload.email;
+            mostrarPanelSiAutorizado(correoUsuario);
           }
         });
-        
-        // Descargar QR
-        downloadButton.addEventListener('click', () => {
-          const qrImage = document.getElementById('qr-image');
-          const mesaTitle = document.querySelector('.modal-title').textContent;
-          
-          // Crear un enlace temporal para la descarga
-          const link = document.createElement('a');
-          link.href = qrImage.src;
-          link.download = mesaTitle.replace(/[^a-zA-Z0-9]/g, '_') + '.png';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        });
-        
-        // Manejadores para los botones de administración
-        document.querySelectorAll('.mesa-admin-button').forEach(button => {
-          button.addEventListener('click', (e) => {
-            e.stopPropagation(); // Evitar que el clic se propague a la tarjeta
-            
-            const action = button.getAttribute('data-action');
-            const mesaId = button.getAttribute('data-mesa-id');
-            const enlaceId = button.getAttribute('data-enlace-id');
-            
-            switch(action) {
-              case 'editar':
-                alert('Editar mesa ' + mesaId + ' (Funcionalidad pendiente)');
-                break;
-              case 'qr':
-                // Obtener el modal y preparar el contenido
-                const modal = document.getElementById('qr-modal');
-                const qrImg = document.getElementById('qr-image');
-                const qrUrl = document.getElementById('qr-url');
-                const mesaTitle = document.querySelector('.modal-title');
-                const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${window.location.origin}/${mesaId}`;
-                
-                // Actualizar el contenido del modal
-                qrImg.src = qrSrc;
-                qrUrl.textContent = `${window.location.origin}/${mesaId}`;
-                
-                // Buscar el nombre de la mesa para el título
-                const mesaNombre = document.querySelector(`[data-mesa-id="${mesaId}"] .mesa-nombre`)?.textContent || `Mesa #${mesaId}`;
-                mesaTitle.textContent = `Código QR para ${mesaNombre}`;
-                
-                // Mostrar el modal
-                modal.classList.add('active');
-                break;
-              case 'agregar':
-                alert('Agregar enlace a mesa ' + mesaId + ' (Funcionalidad pendiente)');
-                break;
-              case 'editar-enlace':
-                alert('Editar enlace ' + enlaceId + ' (Funcionalidad pendiente)');
-                break;
-              case 'eliminar-enlace':
-                alert('Eliminar enlace ' + enlaceId + ' (Funcionalidad pendiente)');
-                break;
-            }
-          });
-        });
-      });
+        window.google.accounts.id.renderButton(
+          document.getElementById("login-google"),
+          { theme: "outline", size: "large", text: "signin_with", locale: "es" }
+        );
+        // Si ya hay sesión previa, intentar login automático
+        window.google.accounts.id.prompt();
+      };
     </script>
-  </body>
-</html>
+    <div id="login-google" style="display:none;margin:2rem auto;text-align:center;"></div>
+    <div id="denegado" style="display:none;color:#fff;background:#e53935;padding:1rem;border-radius:12px;text-align:center;max-width:500px;margin:2rem auto 0 auto;font-weight:bold;">
+      Acceso denegado. Tu correo no está autorizado para acceder al panel de administración.
+    </div>
+    <div id="admin-panel" style="display:none;">
