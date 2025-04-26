@@ -7,7 +7,7 @@ Este documento describe paso a paso las fases del desarrollo de la plataforma Ku
 ## Estructura del Proyecto
 
   kubo/
-  ├── frontend/           # Proyecto Astro
+  ├── frontend/           # Proyecto Astro.
   └── backend/            # Scripts de Google Apps Script
   
 ---
